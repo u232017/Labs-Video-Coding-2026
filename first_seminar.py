@@ -13,3 +13,6 @@ class ColorTranslator:
         g = y - 0.39465 * u - 0.58060 * v
         b = y + 2.03211 * u
         return r, g, b
+
+#https://blog.csdn.net/qq_34952376/article/details/136813279
+#https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
