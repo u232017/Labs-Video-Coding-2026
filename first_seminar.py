@@ -1,4 +1,5 @@
 
+#Exercise 2: Color space conversion
 class ColorTranslator:
     def rgb_to_yuv(r, g, b):
         # Coeficients BT.601: Kr = 0.299, Kg = 0.587, Kb = 0.114
@@ -16,3 +17,12 @@ class ColorTranslator:
 
 #https://blog.csdn.net/qq_34952376/article/details/136813279
 #https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
+
+#Exercise 3: The chroma lie
+#We have executed the following commands in our terminal:
+# ffmpeg -i image.jpeg -pix_fmt yuv444p out444.jpeg
+# ffmpeg -i image.jpeg -pix_fmt yuv422p out422.jpeg
+# ffmpeg -i image.jpeg -pix_fmt yuv420p out420.jpeg
+# ffmpeg -i image.jpeg -pix_fmt yuv411p out411.jpeg
+
+#
