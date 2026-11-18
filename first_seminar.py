@@ -20,9 +20,9 @@ class ColorTranslator:
 
 #Exercise 3: The chroma lie
 #We have executed the following commands in our terminal:
-# ffmpeg -i image.jpeg -pix_fmt yuv444p out444.jpeg
-# ffmpeg -i image.jpeg -pix_fmt yuv422p out422.jpeg
-# ffmpeg -i image.jpeg -pix_fmt yuv420p out420.jpeg
-# ffmpeg -i image.jpeg -pix_fmt yuv411p out411.jpeg
+# ffmpeg -i image.png -pix_fmt yuv444p out444.jpg
+# ffmpeg -i image.png -pix_fmt yuv422p out422.jpg
+# ffmpeg -i image.png -pix_fmt yuv420p out420.jpg
+# ffmpeg -i image.png -pix_fmt yuv411p out411.jpg
 
 #
