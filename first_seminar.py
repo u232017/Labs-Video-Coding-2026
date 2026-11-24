@@ -1,3 +1,4 @@
+import subprocess
 
 #Exercise 2: Color space conversion
 class ColorTranslator:
@@ -64,3 +65,30 @@ print(f"RGB: ({r:.4f}, {g:.4f}, {b:.4f})")
 # and bandwidth with almost no perceptible loss in visual quality.
 
 #All the results of the exercise 3 can be found in the "Exercise3_sources" folder.
+
+
+#Exercise 4:
+valid_factors = [2, 4, 8]
+valid_algorithms = ["bilinear", "bicubic", "lanczos", "neighbor"]
+
+def image_resize(resizing_factor, img, algorithm=""):
+
+    if ((resizing_factor in valid_factors) and algorithm == ""):
+        scale = f"scale=iw/{resizing_factor}:ih/{resizing_factor}"
+        output = f"output_4/resized_{resizing_factor}.jpg"
+        subprocess.run(["ffmpeg", "-i", img, "-update", "1", "-vf", scale, output], check=True)
+        
+    elif ((resizing_factor in valid_factors) and (algorithm in valid_algorithms)):
+        scale = f"scale=iw/{resizing_factor}:ih/{resizing_factor}"
+        output = f"output_4/resized_{resizing_factor}_{algorithm}.jpg"
+        subprocess.run(["ffmpeg", "-i", img, "-update", "1", "-vf", scale, "-sws_flags", algorithm, output], check=True)
+        
+    else:
+        print("\nERROR: Invalid resizing factor.\n")
+
+
+image1 = "input/sonice-adventure-pose-1299062768.jpg"
+
+image_resize(resizing_factor=2, algorithm="lanczos", img=image1)
+image_resize(resizing_factor=4, algorithm="lanczos", img=image1)
+image_resize(resizing_factor=8, algorithm="lanczos", img=image1)
