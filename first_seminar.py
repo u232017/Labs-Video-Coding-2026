@@ -1,6 +1,5 @@
 import subprocess
 
-
 #Exercise 2: Color space conversion
 class ColorTranslator:
     def rgb_to_yuv(r, g, b):
