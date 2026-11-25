@@ -90,3 +90,20 @@ print(output_mat)
 
 # - Why this order? One line is enough
 # ANSWER: 
+
+# Exercise 6:
+
+class DCTEncoder:
+
+    def average (list):
+        i,sum = 0,0
+        while i <= len(list):
+            sum += list[i]
+        return (sum/len(list))
+
+    def encode(mat):
+        list = zigzag(mat)
+        avg = DCTEncoder.average(list)
+
+    def decode():
+        pass
