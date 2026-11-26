@@ -75,23 +75,23 @@ def image_resize(resizing_factor, img, algorithm=""):
 
     if ((resizing_factor in valid_factors) and algorithm == ""):
         scale = f"scale=iw/{resizing_factor}:ih/{resizing_factor}"
-        output = f"output_4/resized_{resizing_factor}.jpg"
+        output = f"Exercise4_sources/output_4/resized_{resizing_factor}.jpg"
         subprocess.run(["ffmpeg", "-i", img, "-update", "1", "-vf", scale, output], check=True)
         
     elif ((resizing_factor in valid_factors) and (algorithm in valid_algorithms)):
         scale = f"scale=iw/{resizing_factor}:ih/{resizing_factor}"
-        output = f"output_4/resized_{resizing_factor}_{algorithm}.jpg"
+        output = f"Exercise4_sources/output_4/resized_{resizing_factor}_{algorithm}.jpg"
         subprocess.run(["ffmpeg", "-i", img, "-update", "1", "-vf", scale, "-sws_flags", algorithm, output], check=True)
         
     else:
         print("\nERROR: Invalid resizing factor.\n")
 
 
-image1 = "input/sonice-adventure-pose-1299062768.jpg"
+image1 = "Exercise4_sources/input/sonice-adventure-pose-1299062768.jpg"
 
-image_resize(resizing_factor=2, algorithm="lanczos", img=image1)
-image_resize(resizing_factor=4, algorithm="lanczos", img=image1)
-image_resize(resizing_factor=8, algorithm="lanczos", img=image1)
+#image_resize(resizing_factor=2, algorithm="lanczos", img=image1)
+#image_resize(resizing_factor=4, algorithm="lanczos", img=image1)
+#image_resize(resizing_factor=8, algorithm="lanczos", img=image1)
 
 # - Which scaling algorithm does FFmpeg use by default?
 # ANSWER: 
@@ -99,32 +99,47 @@ image_resize(resizing_factor=8, algorithm="lanczos", img=image1)
 # Exercise 5:
 
 def zigzag (matrix):
+    rows = len(matrix)
+    cols = len(matrix[0])
     output = []
-    
-    i,j = 0,0
-    for i in range(8):
-        for j in range(8):
-            if ((i % 2) == 0):
+
+    for s in range(rows + cols - 1):
+        min_row = max(0, s - (cols - 1))
+        max_row = min(rows - 1, s)
+
+        if ((s % 2) == 0):
+            for i in range(max_row, min_row - 1, -1):
+                j = s - i
                 output.append(matrix[i][j])
-            else:
-                new_j = abs(j - 7)
-                output.append(matrix[i][new_j])
+        else:
+            for i in range(min_row, max_row + 1):
+                j = s - i
+                output.append(matrix[i][j])
     return output
 
-def inverse_zigzag (list):
-    output_matrix = []
+def inverse_zigzag (values, rows=8, cols=8):
+    if len(values) != rows * cols:
+        raise ValueError("List length does not match matrix dimensions")
 
-    for i in range(8):
-        row = []
-        for j in range(8):
-            if (i % 2 == 0):
-                row.append(list[i * 8 + j])
-            else:
-                row.append(list[i * 8 + (7 - j)])
+    matrix = [[0 for j in range(cols)] for i in range(rows)]
 
-        output_matrix.append(row)
+    n = 0
+    for s in range(rows + cols - 1):
 
-    return output_matrix
+        min_row = max(0, s - (cols - 1))
+        max_row = min(rows - 1, s)
+
+        if s % 2 == 0:
+            for i in range(max_row, min_row - 1, -1):
+                j = s - i
+                matrix[i][j] = values[n]
+                n += 1
+        else:
+            for i in range(min_row, max_row + 1):
+                j = s - i
+                matrix[i][j] = values[n]
+                n += 1
+    return matrix
 
 mat = [[1,2,3,4,5,6,7,8], [9,10,11,12,13,14,15,16], [17,18,19,20,21,22,23,24], [25,26,27,28,29,30,31,32], 
        [33,34,35,36,37,38,39,40], [41,42,43,44,45,46,47,48], [49,50,51,52,53,54,55,56], [57,58,59,60,61,62,63,64]]
@@ -135,22 +150,119 @@ print(output_list)
 output_mat = inverse_zigzag(output_list)
 print(output_mat)
 
-# - Why this order? One line is enough
-# ANSWER: 
+# - Why this order?
+# ANSWER: Because it arranges coefficients from lower to higher frequencies (approximately). After quantization, 
+# many high frequency coefficients ecome zero because they're less significant to the image's visual appearence, 
+# the zigzag scan groups these zeros towards the end of the resulting list. After that, they can be easily compressed.
 
 # Exercise 6:
 
+Q_LUMINANCE = [
+    [16, 11, 10, 16, 24, 40, 51, 61],
+    [12, 12, 14, 19, 26, 58, 60, 55],
+    [14, 13, 16, 24, 40, 57, 69, 56],
+    [14, 17, 22, 29, 51, 87, 80, 62],
+    [18, 22, 37, 56, 68, 109, 103, 77],
+    [24, 35, 55, 64, 81, 104, 113, 92],
+    [49, 64, 78, 87, 103, 121, 120, 101],
+    [72, 92, 95, 98, 112, 100, 103, 99]
+]
+
+def get_quantization_table(quality):
+    if not 1 <= quality <= 100:
+        raise ValueError("Quality must be between 1 and 100")
+
+    if quality < 50:
+        scale = 5000 / quality
+    else:
+        scale = 200 - 2 * quality
+
+    table = []
+
+    for row in Q_LUMINANCE:
+        new_row = []
+        for value in row:
+            q = int((value * scale + 50) / 100)
+            q = max(1, min(255, q))
+            new_row.append(q)
+        table.append(new_row)
+
+    return table
+
+import numpy as np
+from scipy.fft import dctn, idctn
+
 class DCTEncoder:
 
-    def average (list):
-        i,sum = 0,0
-        while i <= len(list):
-            sum += list[i]
-        return (sum/len(list))
+    def __init__(self, quality=50):
+        self.quality = quality
+        self.Q = get_quantization_table(quality)
 
-    def encode(mat):
-        list = zigzag(mat)
-        avg = DCTEncoder.average(list)
+    def encode(self, block):
 
-    def decode():
-        pass
+        block = np.array(block, dtype=float)
+        if block.shape != (8, 8):
+            raise ValueError("Block must be 8x8")
+
+        block = block - 128
+        dct_block = dctn(block, type=2, norm='ortho')
+
+        quantized = np.round(dct_block / np.array(self.Q))
+
+        return zigzag(quantized.tolist())
+
+    def decode(self, values):
+
+        quantized = np.array(inverse_zigzag(values), dtype=float)
+        dct_block = quantized * np.array(self.Q)
+        block = idctn(dct_block, type=2, norm='ortho')
+
+        block = block + 128
+        block = np.clip(np.round(block), 0, 255)
+
+        return block.astype(int).tolist()
+
+
+# https://www.w3.org/Graphics/JPEG/itu-t81 A.3.1 , A.3.3 , A.3.4 , A.3.6 , Annex F , Annex K & Table K.1
+
+def test_encoder(matrix):
+    qualities = [100, 75, 50, 25, 10]
+
+    for quality in qualities:
+
+        encoder = DCTEncoder(quality)
+        encoded = encoder.encode(Q_LUMINANCE)
+        decoded = encoder.decode(encoded)
+
+        original = np.array(Q_LUMINANCE)
+        reconstructed = np.array(decoded)
+
+        mse = np.mean((original - reconstructed) ** 2)
+
+        max_error = np.max(
+            np.abs(original - reconstructed)
+        )
+
+        high_freq = encoded[32:]
+        zeros = high_freq.count(0)
+
+        print(f"\nQuality: {quality}")
+
+        print("Encoded coefficients:", len(encoded))
+        print("Decoded dimensions:", reconstructed.shape)
+        print("High-frequency zeros:", zeros, "/ 32")
+        print("Mean squared error:", round(mse, 2))
+        print("Maximum pixel error:", max_error)
+
+        assert len(encoded) == 64
+        assert reconstructed.shape == (8, 8)
+        assert np.all(reconstructed >= 0)
+        assert np.all(reconstructed <= 255)
+
+    print("\nAll tests passed!")
+
+test_mat = [[52, 55, 61, 66, 70, 61, 64, 73], [63, 59, 55, 90, 109, 85, 69, 72], [62, 59, 68, 113, 144, 104, 66, 73],
+    [63, 58, 71, 122, 154, 106, 70, 69], [67, 61, 68, 104, 126, 88, 68, 70], [79, 65, 60, 70, 77, 68, 58, 75],
+    [85, 71, 64, 59, 55, 61, 65, 83], [87, 79, 69, 68, 65, 76, 78, 94]]
+
+test_encoder(test_mat)
