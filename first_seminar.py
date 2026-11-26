@@ -156,17 +156,112 @@ print(output_mat)
 
 # Exercise 6:
 
+Q_LUMINANCE = [
+    [16, 11, 10, 16, 24, 40, 51, 61],
+    [12, 12, 14, 19, 26, 58, 60, 55],
+    [14, 13, 16, 24, 40, 57, 69, 56],
+    [14, 17, 22, 29, 51, 87, 80, 62],
+    [18, 22, 37, 56, 68, 109, 103, 77],
+    [24, 35, 55, 64, 81, 104, 113, 92],
+    [49, 64, 78, 87, 103, 121, 120, 101],
+    [72, 92, 95, 98, 112, 100, 103, 99]
+]
+
+def get_quantization_table(quality):
+    if not 1 <= quality <= 100:
+        raise ValueError("Quality must be between 1 and 100")
+
+    if quality < 50:
+        scale = 5000 / quality
+    else:
+        scale = 200 - 2 * quality
+
+    table = []
+
+    for row in Q_LUMINANCE:
+        new_row = []
+        for value in row:
+            q = int((value * scale + 50) / 100)
+            q = max(1, min(255, q))
+            new_row.append(q)
+        table.append(new_row)
+
+    return table
+
+import numpy as np
+from scipy.fft import dctn, idctn
+
 class DCTEncoder:
 
-    def average (list):
-        i,sum = 0,0
-        while i <= len(list):
-            sum += list[i]
-        return (sum/len(list))
+    def __init__(self, quality=50):
+        self.quality = quality
+        self.Q = get_quantization_table(quality)
 
-    def encode(mat):
-        list = zigzag(mat)
-        avg = DCTEncoder.average(list)
+    def encode(self, block):
 
-    def decode():
-        pass
+        block = np.array(block, dtype=float)
+        if block.shape != (8, 8):
+            raise ValueError("Block must be 8x8")
+
+        block = block - 128
+        dct_block = dctn(block, type=2, norm='ortho')
+
+        quantized = np.round(dct_block / np.array(self.Q))
+
+        return zigzag(quantized.tolist())
+
+    def decode(self, values):
+
+        quantized = np.array(inverse_zigzag(values), dtype=float)
+        dct_block = quantized * np.array(self.Q)
+        block = idctn(dct_block, type=2, norm='ortho')
+
+        block = block + 128
+        block = np.clip(np.round(block), 0, 255)
+
+        return block.astype(int).tolist()
+
+
+# https://www.w3.org/Graphics/JPEG/itu-t81 A.3.1 , A.3.3 , A.3.4 , A.3.6 , Annex F , Annex K & Table K.1
+
+def test_encoder(matrix):
+    qualities = [100, 75, 50, 25, 10]
+
+    for quality in qualities:
+
+        encoder = DCTEncoder(quality)
+        encoded = encoder.encode(Q_LUMINANCE)
+        decoded = encoder.decode(encoded)
+
+        original = np.array(Q_LUMINANCE)
+        reconstructed = np.array(decoded)
+
+        mse = np.mean((original - reconstructed) ** 2)
+
+        max_error = np.max(
+            np.abs(original - reconstructed)
+        )
+
+        high_freq = encoded[32:]
+        zeros = high_freq.count(0)
+
+        print(f"\nQuality: {quality}")
+
+        print("Encoded coefficients:", len(encoded))
+        print("Decoded dimensions:", reconstructed.shape)
+        print("High-frequency zeros:", zeros, "/ 32")
+        print("Mean squared error:", round(mse, 2))
+        print("Maximum pixel error:", max_error)
+
+        assert len(encoded) == 64
+        assert reconstructed.shape == (8, 8)
+        assert np.all(reconstructed >= 0)
+        assert np.all(reconstructed <= 255)
+
+    print("\nAll tests passed!")
+
+test_mat = [[52, 55, 61, 66, 70, 61, 64, 73], [63, 59, 55, 90, 109, 85, 69, 72], [62, 59, 68, 113, 144, 104, 66, 73],
+    [63, 58, 71, 122, 154, 106, 70, 69], [67, 61, 68, 104, 126, 88, 68, 70], [79, 65, 60, 70, 77, 68, 58, 75],
+    [85, 71, 64, 59, 55, 61, 65, 83], [87, 79, 69, 68, 65, 76, 78, 94]]
+
+test_encoder(test_mat)
