@@ -66,7 +66,6 @@ print(f"RGB: ({r:.4f}, {g:.4f}, {b:.4f})")
 
 #All the results of the exercise 3 can be found in the "Exercise3_sources" folder.
 
-
 #Exercise 4:
 valid_factors = [2, 4, 8]
 valid_algorithms = ["bilinear", "bicubic", "lanczos", "neighbor"]
