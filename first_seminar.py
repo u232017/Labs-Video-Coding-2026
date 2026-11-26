@@ -98,7 +98,7 @@ image1 = "Exercise4_sources/input/sonice-adventure-pose-1299062768.jpg"
 # - Which scaling algorithm does FFmpeg use by default?
 # ANSWER: 
 
-# Exercise 5:
+# Exercise 5: Zigzag
 
 def zigzag (matrix):
     rows = len(matrix)
@@ -222,3 +222,26 @@ for q in [90, 50, 10]:
     for row in decoded:
         print(row)
     print()
+
+#Exercise 7: Run-length encoding
+def Runlenght_encode(array):
+    encoded = []
+    current_val = array[0]
+    count = 1
+
+    for val in array[1:]:
+        if val == current_val:
+            count += 1
+        else:
+            encoded.append((count, current_val))
+            current_val = val
+            count = 1
+
+    encoded.append((count, current_val))
+    return encoded
+
+def Runlenght_decode(array_decoded):
+    decoded = []
+    for count, val in array_decoded:
+        decoded.extend([val] * count)
+    return decoded
