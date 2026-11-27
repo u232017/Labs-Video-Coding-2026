@@ -334,11 +334,10 @@ for q in ffmpeg_qualities:
 # FFmpeg B/W -q:v 10 -> Size: 95829 bytes | PSNR: 39.47 dB
 # FFmpeg B/W -q:v 31 -> Size: 60441 bytes | PSNR: 33.02 dB
 
-# - Comparison between our pipeline and FFmpeg:
+# - Comparison between our JPEG and FFmpeg:
 # ANSWER: Both achieve very similar PSNR values across quality levels (~48-49 dB at high quality,
 # ~40 dB at medium quality, and ~33 dB at low quality). However, FFmpeg produces significantly
-# smaller files because standard JPEG adds entropy coding (Huffman) after RLE and uses
-# optimized quantization tables.
+# smaller files.
 
 # Hardest compression in B/W
 subprocess.run(["ffmpeg", "-i", image1, "-vf", "format=gray", "-q:v", "31", "hardest_bw.jpg"], check=True)
