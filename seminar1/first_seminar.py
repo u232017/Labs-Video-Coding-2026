@@ -185,7 +185,7 @@ class DCTEncoder:
 
     def encode(self, matrix, quality=50):
         Q = get_quantization_table(quality)
-        matrix = np.array(matrix) - 128
+        matrix = np.asarray(matrix, dtype=np.float64) - 128
         dct_matrix = dctn(matrix, norm='ortho')
         quantized = np.round(dct_matrix / Q)
         return zigzag(quantized.tolist())
@@ -225,6 +225,9 @@ class DCTEncoder:
 
 #Exercise 7: Run-length encoding
 def Runlenght_encode(array):
+    if len(array) == 0:
+        return []
+
     encoded = []
     current_val = array[0]
     count = 1
@@ -249,98 +252,99 @@ def Runlenght_decode(array_decoded):
 from PIL import Image
 
 # Exercise 8: Color space conversion with images
-img_rgb = np.array(Image.open(image1).convert("RGB"), dtype=np.float64)
+if __name__ == "__main__":
+    img_rgb = np.array(Image.open(image1).convert("RGB"), dtype=np.float64)
 
-R = img_rgb[:, :, 0]
-G = img_rgb[:, :, 1]
-B = img_rgb[:, :, 2]
+    R = img_rgb[:, :, 0]
+    G = img_rgb[:, :, 1]
+    B = img_rgb[:, :, 2]
 
-Y, U, V = ColorTranslator.rgb_to_yuv(R, G, B)
+    Y, U, V = ColorTranslator.rgb_to_yuv(R, G, B)
 
-# Pad the Y channel so its dimensions are multiples of 8
-h, w = Y.shape
-pad_h = (8 - h % 8) % 8
-pad_w = (8 - w % 8) % 8
-canal_padded = np.pad(Y, ((0, pad_h), (0, pad_w)), mode='edge')
-nuevo_h, nuevo_w = canal_padded.shape
+    # Pad the Y channel so its dimensions are multiples of 8
+    h, w = Y.shape
+    pad_h = (8 - h % 8) % 8
+    pad_w = (8 - w % 8) % 8
+    canal_padded = np.pad(Y, ((0, pad_h), (0, pad_w)), mode='edge')
+    nuevo_h, nuevo_w = canal_padded.shape
 
-# Split the padded channel into 8x8 blocks
-bloques = []
-for i in range(0, nuevo_h, 8):
-    for j in range(0, nuevo_w, 8):
-        bloque = canal_padded[i:i+8, j:j+8]
-        bloques.append(bloque)
-
-encoder = DCTEncoder()
-
-for calidad in [90, 50, 10]:
-    bloques_reconstruidos = []
-    total_rle = 0
-
-    for b in bloques:
-        # Encode: DCT -> Quantization -> Zigzag -> RLE
-        zz = encoder.encode(b, quality=calidad)
-        rle = Runlenght_encode(zz)
-        total_rle += len(rle)
-        
-        # Decode: Inverse RLE -> Inverse Zigzag -> Dequantization -> IDCT
-        zz_rec = Runlenght_decode(rle)
-        b_rec = encoder.decode(zz_rec, quality=calidad)
-        bloques_reconstruidos.append(b_rec)
-
-    # Reconstruct the full image from the decoded 8x8 blocks
-    Y_rec = np.zeros((nuevo_h, nuevo_w))
-    idx = 0
+    # Split the padded channel into 8x8 blocks
+    bloques = []
     for i in range(0, nuevo_h, 8):
         for j in range(0, nuevo_w, 8):
-            Y_rec[i:i+8, j:j+8] = bloques_reconstruidos[idx]
-            idx += 1
+            bloque = canal_padded[i:i+8, j:j+8]
+            bloques.append(bloque)
 
-    # Remove padding to restore original dimensions
-    Y_final = Y_rec[:h, :w]
+    encoder = DCTEncoder()
 
-    # Compute PSNR against the original Y channel
-    mse = np.mean((Y - Y_final) ** 2)
-    psnr = 20 * np.log10(255.0 / np.sqrt(mse)) if mse > 0 else float('inf')
+    for calidad in [90, 50, 10]:
+        bloques_reconstruidos = []
+        total_rle = 0
 
-    # Save reconstructed grayscale image
-    Image.fromarray(np.clip(Y_final, 0, 255).astype(np.uint8)).save(f"Y_q{calidad}.png")
-    print(f"Quality {calidad} -> RLE symbols: {total_rle} | PSNR: {psnr:.2f} dB")
+        for b in bloques:
+            # Encode: DCT -> Quantization -> Zigzag -> RLE
+            zz = encoder.encode(b, quality=calidad)
+            rle = Runlenght_encode(zz)
+            total_rle += len(rle)
 
-# Results:
-# Quality 90 -> RLE symbols: 275545 | PSNR: 48.37 dB
-# Quality 50 -> RLE symbols: 170862 | PSNR: 40.19 dB
-# Quality 10 -> RLE symbols: 109825 | PSNR: 33.31 dB
+            # Decode: Inverse RLE -> Inverse Zigzag -> Dequantization -> IDCT
+            zz_rec = Runlenght_decode(rle)
+            b_rec = encoder.decode(zz_rec, quality=calidad)
+            bloques_reconstruidos.append(b_rec)
+
+        # Reconstruct the full image from the decoded 8x8 blocks
+        Y_rec = np.zeros((nuevo_h, nuevo_w))
+        idx = 0
+        for i in range(0, nuevo_h, 8):
+            for j in range(0, nuevo_w, 8):
+                Y_rec[i:i+8, j:j+8] = bloques_reconstruidos[idx]
+                idx += 1
+
+        # Remove padding to restore original dimensions
+        Y_final = Y_rec[:h, :w]
+
+        # Compute PSNR against the original Y channel
+        mse = np.mean((Y - Y_final) ** 2)
+        psnr = 20 * np.log10(255.0 / np.sqrt(mse)) if mse > 0 else float('inf')
+
+        # Save reconstructed grayscale image
+        Image.fromarray(np.clip(Y_final, 0, 255).astype(np.uint8)).save(f"Y_q{calidad}.png")
+        print(f"Quality {calidad} -> RLE symbols: {total_rle} | PSNR: {psnr:.2f} dB")
+
+    # Results:
+    # Quality 90 -> RLE symbols: 275545 | PSNR: 48.37 dB
+    # Quality 50 -> RLE symbols: 170862 | PSNR: 40.19 dB
+    # Quality 10 -> RLE symbols: 109825 | PSNR: 33.31 dB
 
 
-# Comparison with FFmpeg
-ffmpeg_qualities = [2, 10, 31]
+    # Comparison with FFmpeg
+    ffmpeg_qualities = [2, 10, 31]
 
-for q in ffmpeg_qualities:
-    out_file = f"out_q{q}.jpg"
-    subprocess.run(["ffmpeg", "-i", image1, "-vf", "format=gray", "-q:v", str(q), out_file], check=True)
-    
-    ff_img = np.array(Image.open(out_file).convert("L"), dtype=np.float64)
-    mse = np.mean((Y - ff_img) ** 2)
-    psnr = 20 * np.log10(255.0 / np.sqrt(mse))
-    
-    with open(out_file, "rb") as f:
-        file_size = len(f.read())
-        
-    print(f"FFmpeg -q:v {q} -> Size: {file_size} bytes | PSNR: {psnr:.2f} dB")
+    for q in ffmpeg_qualities:
+        out_file = f"out_q{q}.jpg"
+        subprocess.run(["ffmpeg", "-i", image1, "-vf", "format=gray", "-q:v", str(q), out_file], check=True)
 
-# Results:
-# FFmpeg B/W -q:v 2 -> Size: 187412 bytes | PSNR: 49.64 dB
-# FFmpeg B/W -q:v 10 -> Size: 95829 bytes | PSNR: 39.47 dB
-# FFmpeg B/W -q:v 31 -> Size: 60441 bytes | PSNR: 33.02 dB
+        ff_img = np.array(Image.open(out_file).convert("L"), dtype=np.float64)
+        mse = np.mean((Y - ff_img) ** 2)
+        psnr = 20 * np.log10(255.0 / np.sqrt(mse))
 
-# - Comparison between our JPEG and FFmpeg:
-# ANSWER: Both achieve very similar PSNR values across quality levels (~48-49 dB at high quality,
-# ~40 dB at medium quality, and ~33 dB at low quality). However, FFmpeg produces significantly
-# smaller files.
+        with open(out_file, "rb") as f:
+            file_size = len(f.read())
 
-# Hardest compression in B/W
-subprocess.run(["ffmpeg", "-i", image1, "-vf", "format=gray", "-q:v", "31", "hardest_bw.jpg"], check=True)
+        print(f"FFmpeg -q:v {q} -> Size: {file_size} bytes | PSNR: {psnr:.2f} dB")
+
+    # Results:
+    # FFmpeg B/W -q:v 2 -> Size: 187412 bytes | PSNR: 49.64 dB
+    # FFmpeg B/W -q:v 10 -> Size: 95829 bytes | PSNR: 39.47 dB
+    # FFmpeg B/W -q:v 31 -> Size: 60441 bytes | PSNR: 33.02 dB
+
+    # - Comparison between our JPEG and FFmpeg:
+    # ANSWER: Both achieve very similar PSNR values across quality levels (~48-49 dB at high quality,
+    # ~40 dB at medium quality, and ~33 dB at low quality). However, FFmpeg produces significantly
+    # smaller files.
+
+    # Hardest compression in B/W
+    subprocess.run(["ffmpeg", "-i", image1, "-vf", "format=gray", "-q:v", "31", "hardest_bw.jpg"], check=True)
 
 # - Comment on hardest B/W compression results:
 # ANSWER: Using "-vf format=gray" removes the U and V chrominance channels completely, and
