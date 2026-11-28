@@ -22,10 +22,11 @@ class ColorTranslator:
 #https://blog.csdn.net/qq_34952376/article/details/136813279
 #https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.601_conversion
 
-y,u,v = ColorTranslator.rgb_to_yuv(25, 255, 3)
-r,g,b = ColorTranslator.yuv_to_rgb(y, u, v)
+# y,u,v = ColorTranslator.rgb_to_yuv(25, 255, 3)
+# r,g,b = ColorTranslator.yuv_to_rgb(y, u, v)
 
-print(f"RGB: ({r:.4f}, {g:.4f}, {b:.4f})")
+#Results:
+# print(f"RGB: ({r:.4f}, {g:.4f}, {b:.4f})")
 # Result: RGB: (24.9996, 255.0003, 3.0016)
 # As shown above, the round-trip conversion introduces a
 # minor rounding error. This is due to floating-point precision 
@@ -96,7 +97,7 @@ image1 = "Exercise4_sources/input/sonice-adventure-pose-1299062768.jpg"
 #image_resize(resizing_factor=8, algorithm="lanczos", img=image1)
 
 # - Which scaling algorithm does FFmpeg use by default?
-# ANSWER: 
+# ANSWER: bilinear
 
 # Exercise 5: Zigzag
 
@@ -143,14 +144,14 @@ def inverse_zigzag (values, rows=8, cols=8):
                 n += 1
     return matrix
 
-mat = [[1,2,3,4,5,6,7,8], [9,10,11,12,13,14,15,16], [17,18,19,20,21,22,23,24], [25,26,27,28,29,30,31,32], 
-       [33,34,35,36,37,38,39,40], [41,42,43,44,45,46,47,48], [49,50,51,52,53,54,55,56], [57,58,59,60,61,62,63,64]]
+# mat = [[1,2,3,4,5,6,7,8], [9,10,11,12,13,14,15,16], [17,18,19,20,21,22,23,24], [25,26,27,28,29,30,31,32], 
+#        [33,34,35,36,37,38,39,40], [41,42,43,44,45,46,47,48], [49,50,51,52,53,54,55,56], [57,58,59,60,61,62,63,64]]
 
-output_list = zigzag(mat)
-print(output_list)
+# output_list = zigzag(mat)
+# print(output_list)
 
-output_mat = inverse_zigzag(output_list)
-print(output_mat)
+# output_mat = inverse_zigzag(output_list)
+# print(output_mat)
 
 # - Why this order?
 # ANSWER: Because it arranges coefficients from lower to higher frequencies (approximately). After quantization, 
@@ -158,7 +159,6 @@ print(output_mat)
 # the zigzag scan groups these zeros towards the end of the resulting list. After that, they can be easily compressed.
 
 # Exercise 6:
-
 Q_50_Luminance = np.array([
     [16, 11, 10, 16, 24, 40, 51, 61],
     [12, 12, 14, 19, 26, 58, 60, 55],
@@ -199,29 +199,29 @@ class DCTEncoder:
 
 # https://www.w3.org/Graphics/JPEG/itu-t81 A.3.1 , A.3.3 , A.3.4 , A.3.6 , Annex F , Annex K & Table K.1
 
-test_mat = [
-    [52, 55, 61, 66, 70, 61, 64, 73],
-    [63, 59, 55, 90, 109, 85, 69, 72],
-    [62, 59, 68, 113, 144, 104, 66, 73],
-    [63, 58, 71, 122, 154, 106, 70, 69],
-    [67, 61, 68, 104, 126, 88, 68, 70],
-    [79, 65, 60, 70, 77, 68, 58, 75],
-    [85, 71, 64, 59, 55, 61, 65, 83],
-    [87, 79, 69, 68, 65, 76, 78, 94]
-]
+# test_mat = [
+#     [52, 55, 61, 66, 70, 61, 64, 73],
+#     [63, 59, 55, 90, 109, 85, 69, 72],
+#     [62, 59, 68, 113, 144, 104, 66, 73],
+#     [63, 58, 71, 122, 154, 106, 70, 69],
+#     [67, 61, 68, 104, 126, 88, 68, 70],
+#     [79, 65, 60, 70, 77, 68, 58, 75],
+#     [85, 71, 64, 59, 55, 61, 65, 83],
+#     [87, 79, 69, 68, 65, 76, 78, 94]
+# ]
 
-encoder = DCTEncoder()
+# encoder = DCTEncoder()
 
-for q in [90, 50, 10]:
-    encoded = encoder.encode(test_mat, q)
-    decoded = encoder.decode(encoded, q)
-    print("Quality:", q)
-    print("Frecuencias altas:", encoded[32:])
-    print("Ceros en altas:", encoded[32:].count(0), "de 32\n")
-    print("Matriz decoded:")
-    for row in decoded:
-        print(row)
-    print()
+# for q in [90, 50, 10]:
+#     encoded = encoder.encode(test_mat, q)
+#     decoded = encoder.decode(encoded, q)
+#     print("Quality:", q)
+#     print("Frecuencias altas:", encoded[32:])
+#     print("Ceros en altas:", encoded[32:].count(0), "de 32\n")
+#     print("Matriz decoded:")
+#     for row in decoded:
+#         print(row)
+#     print()
 
 #Exercise 7: Run-length encoding
 def Runlenght_encode(array):
@@ -245,3 +245,105 @@ def Runlenght_decode(array_decoded):
     for count, val in array_decoded:
         decoded.extend([val] * count)
     return decoded
+
+from PIL import Image
+
+# Exercise 8: Color space conversion with images
+img_rgb = np.array(Image.open(image1).convert("RGB"), dtype=np.float64)
+
+R = img_rgb[:, :, 0]
+G = img_rgb[:, :, 1]
+B = img_rgb[:, :, 2]
+
+Y, U, V = ColorTranslator.rgb_to_yuv(R, G, B)
+
+# Pad the Y channel so its dimensions are multiples of 8
+h, w = Y.shape
+pad_h = (8 - h % 8) % 8
+pad_w = (8 - w % 8) % 8
+canal_padded = np.pad(Y, ((0, pad_h), (0, pad_w)), mode='edge')
+nuevo_h, nuevo_w = canal_padded.shape
+
+# Split the padded channel into 8x8 blocks
+bloques = []
+for i in range(0, nuevo_h, 8):
+    for j in range(0, nuevo_w, 8):
+        bloque = canal_padded[i:i+8, j:j+8]
+        bloques.append(bloque)
+
+encoder = DCTEncoder()
+
+for calidad in [90, 50, 10]:
+    bloques_reconstruidos = []
+    total_rle = 0
+
+    for b in bloques:
+        # Encode: DCT -> Quantization -> Zigzag -> RLE
+        zz = encoder.encode(b, quality=calidad)
+        rle = Runlenght_encode(zz)
+        total_rle += len(rle)
+        
+        # Decode: Inverse RLE -> Inverse Zigzag -> Dequantization -> IDCT
+        zz_rec = Runlenght_decode(rle)
+        b_rec = encoder.decode(zz_rec, quality=calidad)
+        bloques_reconstruidos.append(b_rec)
+
+    # Reconstruct the full image from the decoded 8x8 blocks
+    Y_rec = np.zeros((nuevo_h, nuevo_w))
+    idx = 0
+    for i in range(0, nuevo_h, 8):
+        for j in range(0, nuevo_w, 8):
+            Y_rec[i:i+8, j:j+8] = bloques_reconstruidos[idx]
+            idx += 1
+
+    # Remove padding to restore original dimensions
+    Y_final = Y_rec[:h, :w]
+
+    # Compute PSNR against the original Y channel
+    mse = np.mean((Y - Y_final) ** 2)
+    psnr = 20 * np.log10(255.0 / np.sqrt(mse)) if mse > 0 else float('inf')
+
+    # Save reconstructed grayscale image
+    Image.fromarray(np.clip(Y_final, 0, 255).astype(np.uint8)).save(f"Y_q{calidad}.png")
+    print(f"Quality {calidad} -> RLE symbols: {total_rle} | PSNR: {psnr:.2f} dB")
+
+# Results:
+# Quality 90 -> RLE symbols: 275545 | PSNR: 48.37 dB
+# Quality 50 -> RLE symbols: 170862 | PSNR: 40.19 dB
+# Quality 10 -> RLE symbols: 109825 | PSNR: 33.31 dB
+
+
+# Comparison with FFmpeg
+ffmpeg_qualities = [2, 10, 31]
+
+for q in ffmpeg_qualities:
+    out_file = f"out_q{q}.jpg"
+    subprocess.run(["ffmpeg", "-i", image1, "-vf", "format=gray", "-q:v", str(q), out_file], check=True)
+    
+    ff_img = np.array(Image.open(out_file).convert("L"), dtype=np.float64)
+    mse = np.mean((Y - ff_img) ** 2)
+    psnr = 20 * np.log10(255.0 / np.sqrt(mse))
+    
+    with open(out_file, "rb") as f:
+        file_size = len(f.read())
+        
+    print(f"FFmpeg -q:v {q} -> Size: {file_size} bytes | PSNR: {psnr:.2f} dB")
+
+# Results:
+# FFmpeg B/W -q:v 2 -> Size: 187412 bytes | PSNR: 49.64 dB
+# FFmpeg B/W -q:v 10 -> Size: 95829 bytes | PSNR: 39.47 dB
+# FFmpeg B/W -q:v 31 -> Size: 60441 bytes | PSNR: 33.02 dB
+
+# - Comparison between our JPEG and FFmpeg:
+# ANSWER: Both achieve very similar PSNR values across quality levels (~48-49 dB at high quality,
+# ~40 dB at medium quality, and ~33 dB at low quality). However, FFmpeg produces significantly
+# smaller files.
+
+# Hardest compression in B/W
+subprocess.run(["ffmpeg", "-i", image1, "-vf", "format=gray", "-q:v", "31", "hardest_bw.jpg"], check=True)
+
+# - Comment on hardest B/W compression results:
+# ANSWER: Using "-vf format=gray" removes the U and V chrominance channels completely, and
+# "-q:v 31" applies the maximum quantization scale in FFmpeg's JPEG encoder, reducing the
+# file size to ~60 KB. Visually, this introduces noticeable 8x8 blocking artifacts in smooth
+# gradients, loss of fine texture details, and ringing noise around sharp edges.
