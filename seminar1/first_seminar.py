@@ -216,9 +216,9 @@ class DCTEncoder:
 #     encoded = encoder.encode(test_mat, q)
 #     decoded = encoder.decode(encoded, q)
 #     print("Quality:", q)
-#     print("Frecuencias altas:", encoded[32:])
-#     print("Ceros en altas:", encoded[32:].count(0), "de 32\n")
-#     print("Matriz decoded:")
+#     print("High Frequencies:", encoded[32:])
+#     print("Zeroes at High Frequencies:", encoded[32:].count(0), "de 32\n")
+#     print("Decoded Matrix:")
 #     for row in decoded:
 #         print(row)
 #     print()
@@ -252,28 +252,27 @@ def Runlenght_decode(array_decoded):
 from PIL import Image
 
 # Exercise 8: Color space conversion with images
-if __name__ == "__main__":
-    img_rgb = np.array(Image.open(image1).convert("RGB"), dtype=np.float64)
+img_rgb = np.array(Image.open(image1).convert("RGB"), dtype=np.float64)
 
-    R = img_rgb[:, :, 0]
-    G = img_rgb[:, :, 1]
-    B = img_rgb[:, :, 2]
+R = img_rgb[:, :, 0]
+G = img_rgb[:, :, 1]
+B = img_rgb[:, :, 2]
 
-    Y, U, V = ColorTranslator.rgb_to_yuv(R, G, B)
+Y, U, V = ColorTranslator.rgb_to_yuv(R, G, B)
 
-    # Pad the Y channel so its dimensions are multiples of 8
-    h, w = Y.shape
-    pad_h = (8 - h % 8) % 8
-    pad_w = (8 - w % 8) % 8
-    canal_padded = np.pad(Y, ((0, pad_h), (0, pad_w)), mode='edge')
-    nuevo_h, nuevo_w = canal_padded.shape
+# Pad the Y channel so its dimensions are multiples of 8
+h, w = Y.shape
+pad_h = (8 - h % 8) % 8
+pad_w = (8 - w % 8) % 8
+canal_padded = np.pad(Y, ((0, pad_h), (0, pad_w)), mode='edge')
+new_h, new_w = canal_padded.shape
 
-    # Split the padded channel into 8x8 blocks
-    bloques = []
-    for i in range(0, nuevo_h, 8):
-        for j in range(0, nuevo_w, 8):
-            bloque = canal_padded[i:i+8, j:j+8]
-            bloques.append(bloque)
+# Split the padded channel into 8x8 blocks
+bloques = []
+for i in range(0, new_h, 8):
+    for j in range(0, new_w, 8):
+        bloque = canal_padded[i:i+8, j:j+8]
+        bloques.append(bloque)
 
     encoder = DCTEncoder()
 
@@ -292,13 +291,13 @@ if __name__ == "__main__":
             b_rec = encoder.decode(zz_rec, quality=calidad)
             bloques_reconstruidos.append(b_rec)
 
-        # Reconstruct the full image from the decoded 8x8 blocks
-        Y_rec = np.zeros((nuevo_h, nuevo_w))
-        idx = 0
-        for i in range(0, nuevo_h, 8):
-            for j in range(0, nuevo_w, 8):
-                Y_rec[i:i+8, j:j+8] = bloques_reconstruidos[idx]
-                idx += 1
+    # Reconstruct the full image from the decoded 8x8 blocks
+    Y_rec = np.zeros((new_h, new_w))
+    idx = 0
+    for i in range(0, new_h, 8):
+        for j in range(0, new_w, 8):
+            Y_rec[i:i+8, j:j+8] = bloques_reconstruidos[idx]
+            idx += 1
 
         # Remove padding to restore original dimensions
         Y_final = Y_rec[:h, :w]
@@ -351,3 +350,88 @@ if __name__ == "__main__":
 # "-q:v 31" applies the maximum quantization scale in FFmpeg's JPEG encoder, reducing the
 # file size to ~60 KB. Visually, this introduces noticeable 8x8 blocking artifacts in smooth
 # gradients, loss of fine texture details, and ringing noise around sharp edges.
+
+# Exercise 9:
+
+import pywt
+
+class DWTEncoder:
+
+    def encode(self, matrix, wavelet="haar", quantization=1.0):
+        LL, (cH, cV, HH) = pywt.dwt2(np.array(matrix), wavelet)
+        return {"subbands": {"LL": np.round(LL / quantization), "LH": np.round(cV / quantization), "HL": np.round(cH / quantization), "HH": np.round(HH / quantization)}, "wavelet": wavelet, "quantization": quantization, "shape": np.array(matrix).shape}
+
+    def decode(self, encoded):
+        s, q = encoded["subbands"], encoded["quantization"]
+        reconstructed = pywt.idwt2((s["LL"]*q, (s["HL"]*q, s["LH"]*q, s["HH"]*q)), encoded["wavelet"])
+        return np.clip(np.round(reconstructed[:encoded["shape"][0], :encoded["shape"][1]]), 0, 255).astype(int).tolist()
+
+# DWTEncoder TEST:
+# print("\nExercise 9:\n")
+# print("\nDWT Encoder Test: \n")
+# encoder = DWTEncoder()
+# encoded = encoder.encode(test_mat, wavelet="haar", quantization=1.0)
+
+# for name, coefficients in encoded["subbands"].items():
+#     print(f"\n{name}:\n{coefficients}")
+
+# decoded = encoder.decode(encoded)
+
+# print("\nReconstructed matrix:")
+# print(np.array(decoded))
+
+# print("\nMSE:", np.mean((np.array(test_mat) - decoded)**2))
+
+# # Discrete Wavelet Transform (DWT) decomposes an image into four subbands. The LL subband contains the low-frequency components and preserves the general structure 
+# # and appearance of the image. The LH and HL subbands represent horizontal and vertical detail information, respectively, while the HH subband contains diagonal 
+# # details and high-frequency components.
+
+# # JPEG vs JPEG2000
+# print("\nJPEG vs JPEG2000: \n")
+
+image1 = "Exercise4_sources/input/sonice-adventure-pose-1299062768.jpg"
+jpeg = "Exercise9_sources/compressed.jpg"
+jp2 = "Exercise9_sources/compressed.jp2"
+
+# JPEG
+subprocess.run(["ffmpeg", "-y", "-i", image1, "-frames:v", "1", "-c:v", "mjpeg", "-q:v", "1", "-f", "image2", "-update", "1", jpeg], check=True)
+
+# JPEG2000
+subprocess.run(["ffmpeg", "-y", "-i", image1, "-frames:v", "1", "-c:v", "jpeg2000", "-q:v", "15", "-f", "image2", "-update", "1", jp2], check=True)
+
+# By playing with teh qaulity/compression value, we've managed to produce .jp2 and .jpeg files of the same size.
+
+# PSNR: Original vs JPEG
+print("\n--- JPEG PSNR ---")
+
+subprocess.run(["ffmpeg", "-i", image1, "-i", jpeg, "-lavfi", "[0:v]format=yuv444p[a];[1:v]format=yuv444p[b];[a][b]psnr", "-f", "null", "-"], check=True)
+
+# SSIM: Original vs JPEG
+print("\n--- JPEG SSIM ---")
+
+subprocess.run(["ffmpeg", "-i", image1, "-i", jpeg, "-lavfi", "[0:v]format=yuv444p[a];[1:v]format=yuv444p[b];[a][b]ssim", "-f", "null", "-"], check=True)
+
+# PSNR: Original vs JPEG2000
+print("\n--- JPEG2000 PSNR ---")
+
+subprocess.run(["ffmpeg", "-i", image1, "-i", jp2, "-lavfi", "[0:v]format=yuv444p[a];[1:v]format=yuv444p[b];[a][b]psnr", "-f", "null", "-"], check=True)
+
+# SSIM: Original vs JPEG2000
+print("\n--- JPEG2000 SSIM ---")
+
+subprocess.run(["ffmpeg", "-i", image1, "-i", jp2, "-lavfi", "[0:v]format=yuv444p[a];[1:v]format=yuv444p[b];[a][b]ssim", "-f", "null", "-"], check=True)
+
+# Values obtained:
+
+# JPEG PSNR: y:39.462858 u:45.088007 v:46.304876 average:42.529252
+# JPEG SSIM: Y:0.983104 U:0.991968 V:0.992464 All:0.989179
+
+# JPEG2000 PSNR: y:47.815219 u:53.991959 v:54.561984 average:50.964738
+# JPEG2000 SSIM: Y:0.997359 U:0.998279 V:0.998247 All:0.997962
+
+# Because of its higher PSNR and SSIM values, the data indicates that JPEG2000 yielded the better compression according to both metrics.
+
+# - If JPEG2000 wins... Why is the whole world still using JPEG?
+# ANSWER: For economic reasons, since JPEG was already widely used and supported by existing # hardware and in browsers, it would've been costly to make a U-turn towards JPEG2000 support, 
+# even if it is the better codec. It was also done due to reasons having to do with patenets, since JPEG was already widely used, its patent holders, having more sway over the industry 
+# because of that, bloacked JPEG2000 from being adopted en masse.
