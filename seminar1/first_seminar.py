@@ -88,6 +88,7 @@ def image_resize(resizing_factor, img, algorithm=""):
     else:
         print("\nERROR: Invalid resizing factor.\n")
 
+# The method above resizes a given image by a given factor by using ffmpeg in the command line, through subprocesses.
 
 image1 = "Exercise4_sources/input/sonice-adventure-pose-1299062768.jpg"
 
@@ -96,7 +97,7 @@ image1 = "Exercise4_sources/input/sonice-adventure-pose-1299062768.jpg"
 #image_resize(resizing_factor=8, algorithm="lanczos", img=image1)
 
 # - Which scaling algorithm does FFmpeg use by default?
-# ANSWER: 
+# ANSWER: When using -vf, the default scaling algorithm is bicubic. When using -filter_complex, it is bilinear.
 
 # Exercise 5: Zigzag
 
@@ -119,6 +120,9 @@ def zigzag (matrix):
                 output.append(matrix[i][j])
     return output
 
+# The above function iterates through all diagonals in the matrix (rows + columns - 1). Even diagonals are traversed upwards and odd diagonals are traversed downwards, so it is important that we check 
+# for them. The function then iterates through the valid rows in descending order, calculating the index of the desired row and adding it to the output list.
+
 def inverse_zigzag (values, rows=8, cols=8):
     if len(values) != rows * cols:
         raise ValueError("List length does not match matrix dimensions")
@@ -131,7 +135,7 @@ def inverse_zigzag (values, rows=8, cols=8):
         min_row = max(0, s - (cols - 1))
         max_row = min(rows - 1, s)
 
-        if s % 2 == 0:
+        if ((s % 2) == 0):
             for i in range(max_row, min_row - 1, -1):
                 j = s - i
                 matrix[i][j] = values[n]
@@ -142,6 +146,8 @@ def inverse_zigzag (values, rows=8, cols=8):
                 matrix[i][j] = values[n]
                 n += 1
     return matrix
+
+# The above method first creates an empty matrix based on the number of rows and colums given. After that, the only difference between them is that we allocate a value from the list at each iteration.
 
 mat = [[1,2,3,4,5,6,7,8], [9,10,11,12,13,14,15,16], [17,18,19,20,21,22,23,24], [25,26,27,28,29,30,31,32], 
        [33,34,35,36,37,38,39,40], [41,42,43,44,45,46,47,48], [49,50,51,52,53,54,55,56], [57,58,59,60,61,62,63,64]]
